@@ -1,0 +1,122 @@
+{% extends 'base.html' %} {% block title %}{{ profile.username }}님의 페이지{%
+endblock %} {% block content %}
+<div class="max-w-3xl mx-auto mt-8 space-y-8">
+  <!-- 프로필 헤더 -->
+  <section class="bg-white p-6 rounded-lg shadow">
+    <h2 class="text-2xl font-bold">{{ profile.username }} 님</h2>
+    <p class="mt-2 text-gray-700 whitespace-pre-line">
+      {{ profile.intro or '소개글이 없습니다.' }}
+    </p>
+  </section>
+
+  <!-- 내가 본인 → 소개글 / 비밀번호 폼 -->
+  {% if current_user.username == profile.username %}
+  <section class="bg-white p-6 rounded-lg shadow space-y-6">
+    <!-- 소개글 수정 -->
+    <form method="post" class="space-y-2">
+      <label class="block font-medium">소개글 수정</label>
+      <textarea
+        name="intro"
+        rows="3"
+        class="w-full border px-3 py-2 rounded focus:ring-2 focus:ring-indigo-500"
+      >
+{{ profile.intro }}</textarea
+      >
+      <button
+        type="submit"
+        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+      >
+        저장
+      </button>
+    </form>
+
+    <!-- 비밀번호 변경 -->
+    <form method="post" class="space-y-2">
+      <label class="block font-medium">비밀번호 변경</label>
+      <input
+        name="old_pw"
+        type="password"
+        placeholder="현재 비밀번호"
+        class="w-full border px-3 py-2 rounded focus:ring-2 focus:ring-indigo-500"
+      />
+      <input
+        name="new_pw"
+        type="password"
+        placeholder="새 비밀번호"
+        class="w-full border px-3 py-2 rounded focus:ring-2 focus:ring-indigo-500"
+      />
+      <button
+        type="submit"
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+      >
+        변경
+      </button>
+    </form>
+  </section>
+  {% endif %}
+
+  <!-- 작성한 글 목록 -->
+  <section class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-xl font-semibold mb-4">작성한 글</h3>
+    {% if posts %}
+    <ul class="space-y-2">
+      {% for p in posts %}
+      <li>
+        <a
+          href="{{ url_for('view_post', post_id=p.id) }}"
+          class="text-indigo-600 hover:underline"
+        >
+          {{ p.title }}
+        </a>
+        <span class="text-gray-500 text-sm">({{ p.created_at }})</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-gray-500">작성한 글이 없습니다.</p>
+    {% endif %}
+  </section>
+
+  <!-- 작성한 댓글 목록 -->
+  <section class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-xl font-semibold mb-4">작성한 댓글</h3>
+    {% if comments %}
+    <ul class="space-y-2">
+      {% for c in comments %}
+      <li>
+        <a
+          href="{{ url_for('view_post', post_id=c.post_id) }}"
+          class="text-indigo-600 hover:underline"
+        >
+          {{ c.post_title }}
+        </a>
+        – <span class="text-gray-700">{{ c.body }}</span>
+        <div class="text-gray-400 text-xs">{{ c.created_at }}</div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-gray-500">작성한 댓글이 없습니다.</p>
+    {% endif %}
+  </section>
+  <section class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-xl font-semibold mb-4">채팅 목록</h3>
+    {% if chats %}
+    <ul class="space-y-2">
+      {% for c in chats %}
+      <li>
+        <a
+          href="{{ url_for('private_chat', username=c.other_username) }}"
+          class="text-indigo-600 hover:underline"
+        >
+          {{ c.other_username }}님과의 대화
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-gray-500">아직 대화한 상대가 없습니다.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

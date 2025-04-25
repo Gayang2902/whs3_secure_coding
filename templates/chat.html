@@ -1,0 +1,95 @@
+{% extends 'base.html' %} {% block title %}{{ other }}님과 채팅{% endblock %} {%
+block content %}
+<div class="max-w-2xl mx-auto mt-8">
+  <h2 class="text-xl font-bold mb-4">{{ other }}님과 채팅</h2>
+
+  <!-- 메시지 로그 -->
+  <div
+    id="private-log"
+    class="h-80 overflow-y-auto bg-white p-4 rounded shadow mb-4"
+  >
+    {% for msg in messages %}
+    <div>
+      <strong>{{ msg.sender_id == current_user.id and '나' or other }}:</strong>
+      {{ msg.content }}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="flex">
+    <input
+      id="private-input"
+      type="text"
+      placeholder="메시지…"
+      class="flex-1 border px-3 py-2 rounded-l focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    />
+    <button
+      id="private-send"
+      class="bg-green-600 text-white px-4 rounded-r hover:bg-green-700"
+    >
+      전송
+    </button>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const userId     = {{ current_user.id }};
+    const otherName  = '{{ other }}';
+    const fetchUrl   = "{{ url_for('chat_messages', username=other) }}";
+    const postUrl    = "{{ url_for('post_chat_message', username=other) }}";
+    const logElement = document.getElementById('private-log');
+    const inputEl    = document.getElementById('private-input');
+    const sendBtn    = document.getElementById('private-send');
+
+    function renderMessages(msgs) {
+      logElement.innerHTML = '';
+      msgs.forEach(msg => {
+        const who = msg.sender_id === userId ? '나' : otherName;
+        const div = document.createElement('div');
+        div.innerHTML = `<strong>${who}:</strong> ${msg.content}`;
+        logElement.appendChild(div);
+      });
+      logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    async function fetchMessages() {
+      try {
+        const res = await fetch(fetchUrl);
+        if (!res.ok) throw new Error('Failed to load');
+        const data = await res.json();
+        renderMessages(data.messages);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function sendMessage() {
+      const content = inputEl.value.trim();
+      if (!content) return;
+      try {
+        const res = await fetch(postUrl, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({content})
+        });
+        if (res.ok) {
+          inputEl.value = '';
+          fetchMessages();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputEl.addEventListener('keyup', e => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    // 초기 로드 + 1초 폴링
+    fetchMessages();
+    setInterval(fetchMessages, 1000);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>{% block title %}MyCommunity{% endblock %}</title>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <!-- 고정 헤더 -->
+  <nav class="bg-white shadow fixed top-0 left-0 right-0 z-50">
+    <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+      <!-- 브랜드(홈) -->
+      <a href="{{ url_for('index') }}" class="text-xl font-bold text-indigo-600">
+        우암 쇼핑몰
+      </a>
+
+      <!-- 우측 유저 메뉴 & 검색 -->
+      <div class="flex items-center space-x-4">
+        {% if current_user.is_authenticated %}
+          <span>안녕하세요, {{ current_user.username }}님</span>
+          <a href="{{ url_for('logout') }}" class="hover:text-indigo-600">로그아웃</a>
+
+          {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}" class="text-red-600 hover:text-red-800">
+              Admin
+            </a>
+          {% else %}
+            <a href="{{ url_for('user_page', username=current_user.username) }}"
+               class="hover:text-indigo-600">
+              마이페이지
+            </a>
+          {% endif %}
+        {% else %}
+          <a href="{{ url_for('login') }}" class="hover:text-indigo-600">로그인</a>
+          <a href="{{ url_for('register') }}" class="hover:text-indigo-600">회원가입</a>
+        {% endif %}
+
+        <!-- 유저 검색 폼 -->
+        <form action="{{ url_for('user_search') }}" method="get" class="ml-6 flex items-center">
+          <input type="text" name="q" value="{{ q|default('') }}"
+                 placeholder="유저 검색"
+                 class="px-2 py-1 border rounded-l text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <button type="submit"
+                  class="px-3 py-1 bg-green-600 text-white rounded-r text-sm hover:bg-green-700">
+            검색
+          </button>
+        </form>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 본문: fixed 헤더 만큼 위쪽 패딩 -->
+  <div class="container mx-auto p-4 pt-16">
+    {% with messages = get_flashed_messages() %}
+      {% for m in messages %}
+        <div class="mb-4 p-2 bg-yellow-200">{{ m }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- (1:1 채팅) 현재 접속 중인 방 ID 보관용 -->
+  <input type="hidden" id="current-room" value="">
+
+  <!-- Socket.IO -->
+  <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+
+  <!-- 공통 스크립트: 글로벌 & 프라이빗 채팅 핸들러 -->
+  <script>
+    const socket = io();
+
+    // 방(join) 전환 함수: 호출 시 hidden input에 방 ID 저장
+    function joinRoom(room) {
+      socket.emit('join', { room });
+      document.getElementById('current-room').value = room;
+    }
+
+    // 1:1 메시지 보내기
+    const sendBtn = document.getElementById('send-btn');
+    if (sendBtn) {
+      sendBtn.addEventListener('click', () => {
+        const room    = document.getElementById('current-room').value;
+        const sender  = {{ current_user.is_authenticated and current_user.id or 'null' }};
+        const content = document.getElementById('msg-input').value.trim();
+        if (!room || !content) return;
+        socket.emit('private_message', { room, sender_id: sender, content });
+        document.getElementById('msg-input').value = '';
+      });
+    }
+
+    // 새로운 1:1 메시지 수신
+    socket.on('new_message', data => {
+      if (data.room === document.getElementById('current-room').value) {
+        const ul = document.getElementById('chat-log');
+        if (!ul) return;
+        const li = document.createElement('li');
+        li.textContent = `${data.sender_name}: ${data.content}`;
+        ul.appendChild(li);
+        ul.scrollTop = ul.scrollHeight;
+      }
+    });
+  </script>
+
+  <!-- 개별 페이지 스크립트 추가용 블록 -->
+  {% block scripts %}{% endblock %}
+</body>
+</html>

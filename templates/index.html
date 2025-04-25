@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}메인 게시판{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-8">
+
+  <!-- 1) 검색 폼 -->
+  <form action="{{ url_for('index') }}" method="get" class="flex mb-4">
+    <input
+      type="text" name="q" value="{{ q|default('') }}"
+      placeholder="검색어를 입력하세요"
+      class="flex-1 px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    >
+    <button
+      type="submit"
+      class="bg-indigo-600 text-white px-4 py-2 rounded-r hover:bg-indigo-700"
+    >
+      검색
+    </button>
+  </form>
+
+  <!-- 2) 글쓰기 버튼 -->
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-3xl font-bold">게시글 목록</h2>
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('new_post') }}"
+         class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+        상품 등록
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- 3) 게시글 테이블 + 무한 스크롤 컨테이너 -->
+  <div id="post-container"
+       class="bg-white shadow rounded-lg overflow-y-auto"
+       style="height:80vh;">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50 sticky top-0">
+        <tr>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">제목</th>
+          <th class="px-6 py-3 text-right text-sm font-medium text-gray-500">상태</th>
+          <th class="px-6 py-3 text-right text-sm font-medium text-gray-500">가격(KRW)</th>
+          <th class="px-6 py-3 text-right text-sm font-medium text-gray-500">작성자</th>
+          <th class="px-6 py-3 text-right text-sm font-medium text-gray-500">작성일시</th>
+        </tr>
+      </thead>
+      <tbody id="post-list" class="bg-white divide-y divide-gray-200">
+        {% for post in posts %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <a href="{{ url_for('view_post', post_id=post.id) }}"
+               class="text-indigo-600 hover:underline">
+              {{ post.title }}
+            </a>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-right">
+            {% if post.is_sold %}
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-800">
+                판매 완료
+              </span>
+            {% else %}
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                판매 중
+              </span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-right">
+            {{ "{:,.2f}".format(post.price) }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 text-right">
+            <a href="{{ url_for('private_chat', username=post.author) }}"
+               class="hover:underline">
+              {{ post.author }}
+            </a>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+            {{ post.created_at }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4) 글로벌 채팅 영역 -->
+  <div id="global-chat" class="mt-8 bg-white p-4 rounded shadow h-96 flex flex-col">
+    <div id="global-log" class="flex-1 overflow-y-auto mb-2"></div>
+    <div class="flex">
+      <input id="global-input" type="text" placeholder="전체 채팅…"
+             class="flex-1 border px-2 py-1 rounded-l focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+      <button id="global-send" class="bg-indigo-600 text-white px-4 rounded-r hover:bg-indigo-700">
+        전송
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Socket.IO -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+<script>
+  // 무한 스크롤
+  let page = 1;
+  const container = document.getElementById('post-container');
+  container.addEventListener('scroll', () => {
+    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
+      page++;
+      const params = new URLSearchParams({ page });
+      {% if q %} params.set('q', '{{ q }}'); {% endif %}
+      fetch(`{{ url_for('index') }}?${params}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.getElementById('post-list');
+        data.posts.forEach(post => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-50';
+          tr.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+              <a href="/post/${post.id}" class="text-indigo-600 hover:underline">${post.title}</a>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-right">
+              ${post.is_sold
+                ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-800">판매 완료</span>`
+                : `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">판매 중</span>`
+              }
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-right">
+              ${parseFloat(post.price).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 text-right">
+              <a href="/chat/${post.author}" class="hover:underline">${post.author}</a>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+              ${post.created_at}
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+  });
+
+  // 글로벌 채팅 (Socket.IO)
+  const socket = io();
+  socket.on('global message', data => {
+    const log = document.getElementById('global-log');
+    const el  = document.createElement('div');
+    el.innerHTML = `<strong>${data.user}</strong>: ${data.msg}`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+  });
+  document.getElementById('global-send').onclick = () => {
+    const inp = document.getElementById('global-input');
+    const msg = inp.value.trim();
+    if (!msg) return;
+    socket.emit('global message', msg);
+    inp.value = '';
+  };
+</script>
+{% endblock %}

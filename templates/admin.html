@@ -1,0 +1,314 @@
+<!-- templates/admin.html -->
+{% extends 'base.html' %} {% block title %}관리자 대시보드{% endblock %} {%
+block content %}
+<div class="container mx-auto px-4 max-w-5xl mt-8">
+  <h1 class="text-3xl font-bold mb-6">관리자 대시보드</h1>
+
+  <!-- 탭 네비게이션 -->
+  <div class="flex border-b mb-6">
+    <button id="tab-posts" class="px-4 py-2">전체 게시글</button>
+    <button id="tab-reported" class="px-4 py-2 ml-4">신고된 게시글</button>
+    <button id="tab-users" class="px-4 py-2 ml-4">사용자 관리</button>
+    <button id="tab-reported-users" class="px-4 py-2 ml-4">
+      신고된 사용자
+    </button>
+  </div>
+
+  <!-- 전체 게시글 섹션 -->
+  <section id="section-posts">
+    <table class="min-w-full bg-white shadow rounded-lg overflow-hidden mb-8">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            제목
+          </th>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            작성자
+          </th>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            작성일시
+          </th>
+          <th class="px-6 py-3 text-center text-sm font-medium text-gray-500">
+            행동
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for p in posts %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 text-indigo-600 hover:underline">
+            <a href="{{ url_for('view_post', post_id=p.id) }}">{{ p.title }}</a>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-700">{{ p.author }}</td>
+          <td class="px-6 py-4 text-sm text-gray-500">{{ p.created_at }}</td>
+          <td class="px-6 py-4 text-center">
+            <a
+              href="{{ url_for('delete_post', post_id=p.id) }}"
+              class="text-red-600 hover:text-red-800"
+              >삭제</a
+            >
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+            게시글이 없습니다.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 신고된 게시글 섹션 -->
+  <section id="section-reported" class="hidden">
+    <table class="min-w-full bg-white shadow rounded-lg overflow-hidden mb-8">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            제목
+          </th>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            신고자
+          </th>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            사유
+          </th>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            신고일시
+          </th>
+          <th class="px-6 py-3 text-center text-sm font-medium text-gray-500">
+            행동
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for r in reports %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 text-indigo-600 hover:underline">
+            <a href="{{ url_for('view_post', post_id=r.target_id) }}"
+              >{{ r.target_title }}</a
+            >
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-700">{{ r.reporter }}</td>
+          <td class="px-6 py-4 text-sm text-gray-700">{{ r.reason }}</td>
+          <td class="px-6 py-4 text-sm text-gray-500">{{ r.timestamp }}</td>
+          <td class="px-6 py-4 text-center">
+            <a
+              href="{{ url_for('delete_post', post_id=r.target_id) }}"
+              class="text-red-600 hover:text-red-800"
+              >삭제</a
+            >
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+            신고된 게시글이 없습니다.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 사용자 관리 섹션 -->
+  <section id="section-users" class="hidden">
+    <h2 class="text-2xl font-semibold mb-4">사용자 목록</h2>
+    <table class="min-w-full bg-white shadow rounded-lg overflow-hidden mb-8">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">
+            ID
+          </th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">
+            Username
+          </th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">
+            차단 상태
+          </th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">
+            잔액
+          </th>
+          <th class="px-4 py-2 text-center text-sm font-medium text-gray-500">
+            액션
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for u in users %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-2 text-sm text-gray-700">{{ u.id }}</td>
+          <td class="px-4 py-2 text-sm text-gray-700">{{ u.username }}</td>
+          <td class="px-4 py-2 text-sm text-gray-700">
+            {% if u.is_blocked %}<span class="text-red-600">차단됨</span>{% else
+            %}활성{% endif %}
+          </td>
+          <td class="px-4 py-2 text-sm text-gray-700">
+            ₩{{ "{:.2f}".format(u.balance) }}
+          </td>
+          <td class="px-4 py-2 text-center space-x-2">
+            <form
+              method="post"
+              action="{{ url_for('delete_user', user_id=u.id) }}"
+              onsubmit="return confirm('정말 {{ u.username }}을(를) 탈퇴 처리하겠습니까?');"
+              class="inline"
+            >
+              <button class="text-red-600 hover:text-red-800">탈퇴</button>
+            </form>
+            {% if not u.is_blocked %}
+            <a
+              href="{{ url_for('block_user', user_id=u.id) }}"
+              class="text-yellow-600 hover:text-yellow-800"
+              onclick="return confirm('사용자 {{ u.username }}을(를) 차단하시겠습니까?');"
+            >
+              차단
+            </a>
+            {% else %}
+            <a
+              href="{{ url_for('unblock_user', user_id=u.id) }}"
+              class="text-green-600 hover:text-green-800"
+              onclick="return confirm('사용자 {{ u.username }} 차단 해제하시겠습니까?');"
+            >
+              차단해제
+            </a>
+            {% endif %}
+            <form
+              method="post"
+              action="{{ url_for('update_balance', user_id=u.id) }}"
+              class="inline flex space-x-1 items-center"
+            >
+              <input
+                name="balance"
+                type="number"
+                value="{{ u.balance }}"
+                step="0.01"
+                min="0"
+                class="w-20 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                title="잔액 수정"
+              />
+              <button class="text-indigo-600 hover:text-indigo-800">
+                저장
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="px-4 py-2 text-center text-gray-500">
+            사용자가 없습니다.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 신고된 사용자 섹션 -->
+  <section id="section-reported-users" class="hidden">
+    <h2 class="text-xl font-semibold mb-4">신고된 사용자</h2>
+    <table class="min-w-full bg-white shadow rounded-lg overflow-hidden mb-8">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            신고자
+          </th>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            대상 사용자
+          </th>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            사유
+          </th>
+          <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">
+            신고일시
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for r in reported_users %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 text-sm text-gray-700">{{ r.reporter }}</td>
+          <td class="px-6 py-4 text-sm text-gray-700">
+            {{ r.target_username }}
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-700">{{ r.reason }}</td>
+          <td class="px-6 py-4 text-sm text-gray-500">{{ r.timestamp }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+            신고된 사용자가 없습니다.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+  const tabPosts = document.getElementById("tab-posts");
+  const tabReported = document.getElementById("tab-reported");
+  const tabUsers = document.getElementById("tab-users");
+  const tabReportedUsers = document.getElementById("tab-reported-users");
+
+  const sectionPosts = document.getElementById("section-posts");
+  const sectionReported = document.getElementById("section-reported");
+  const sectionUsers = document.getElementById("section-users");
+  const sectionReportedUsers = document.getElementById(
+    "section-reported-users"
+  );
+
+  function activate(tab) {
+    [tabPosts, tabReported, tabUsers, tabReportedUsers].forEach((t) => {
+      t.classList.remove(
+        "border-b-2",
+        "border-indigo-600",
+        "font-semibold",
+        "text-indigo-600"
+      );
+      t.classList.add("text-gray-600");
+    });
+    tab.classList.add(
+      "border-b-2",
+      "border-indigo-600",
+      "font-semibold",
+      "text-indigo-600"
+    );
+    tab.classList.remove("text-gray-600");
+  }
+
+  tabPosts.addEventListener("click", () => {
+    sectionPosts.classList.remove("hidden");
+    sectionReported.classList.add("hidden");
+    sectionUsers.classList.add("hidden");
+    sectionReportedUsers.classList.add("hidden");
+    activate(tabPosts);
+  });
+  tabReported.addEventListener("click", () => {
+    sectionReported.classList.remove("hidden");
+    sectionPosts.classList.add("hidden");
+    sectionUsers.classList.add("hidden");
+    sectionReportedUsers.classList.add("hidden");
+    activate(tabReported);
+  });
+  tabUsers.addEventListener("click", () => {
+    sectionUsers.classList.remove("hidden");
+    sectionPosts.classList.add("hidden");
+    sectionReported.classList.add("hidden");
+    sectionReportedUsers.classList.add("hidden");
+    activate(tabUsers);
+  });
+  tabReportedUsers.addEventListener("click", () => {
+    sectionReportedUsers.classList.remove("hidden");
+    sectionPosts.classList.add("hidden");
+    sectionReported.classList.add("hidden");
+    sectionUsers.classList.add("hidden");
+    activate(tabReportedUsers);
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    tabPosts.click();
+  });
+</script>
+{% endblock %}

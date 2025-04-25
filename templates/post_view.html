@@ -1,0 +1,271 @@
+<!-- templates/post_view.html -->
+{% extends 'base.html' %} {% block title %}{{ post.title }}{% endblock %} {%
+block content %}
+<div class="max-w-3xl mx-auto mt-12 bg-white p-6 rounded-lg shadow">
+  <!-- 게시글 상세 및 신고 버튼 -->
+  <article class="prose lg:prose-xl mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-4xl font-bold leading-tight">{{ post.title }}</h1>
+      {% if current_user.is_authenticated and current_user.id != post.user_id %}
+      <div class="space-x-2">
+        <!-- 게시글 신고 -->
+        <button
+          id="open-report-post"
+          class="text-sm text-red-600 hover:text-red-800 border border-red-600 px-3 py-1 rounded"
+        >
+          게시글 신고
+        </button>
+        <!-- 사용자 신고 -->
+        <button
+          id="open-report-user"
+          class="text-sm text-yellow-600 hover:text-yellow-800 border border-yellow-600 px-3 py-1 rounded"
+        >
+          사용자 신고
+        </button>
+      </div>
+      {% endif %}
+    </div>
+    <p class="text-sm text-gray-500 mb-4">
+      작성자 {{ post.author }} · {{ post.created_at }}
+    </p>
+    <div class="mt-4">{{ body_html|safe }}</div>
+  </article>
+
+  <!-- 게시글 신고 모달 -->
+  {% if current_user.is_authenticated and current_user.id != post.user_id %}
+  <div
+    id="modal-report-post"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+  >
+    <div class="bg-white p-6 rounded shadow w-full max-w-md">
+      <h2 class="text-xl mb-4">게시글 신고</h2>
+      <form
+        method="post"
+        action="{{ url_for('report_post', post_id=post.id) }}"
+      >
+        <textarea
+          name="reason"
+          rows="4"
+          required
+          class="w-full border p-2 rounded"
+          placeholder="신고 사유를 입력하세요"
+        ></textarea>
+        <div class="mt-4 flex justify-end space-x-2">
+          <button
+            type="button"
+            id="close-report-post"
+            class="px-4 py-2 border rounded"
+          >
+            취소
+          </button>
+          <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">
+            신고
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 사용자 신고 모달 -->
+  <div
+    id="modal-report-user"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+  >
+    <div class="bg-white p-6 rounded shadow w-full max-w-md">
+      <h2 class="text-xl mb-4">사용자 신고</h2>
+      <form
+        method="post"
+        action="{{ url_for('report_user', username=post.author) }}"
+      >
+        <textarea
+          name="reason"
+          rows="4"
+          required
+          class="w-full border p-2 rounded"
+          placeholder="신고 사유를 입력하세요"
+        ></textarea>
+        <div class="mt-4 flex justify-end space-x-2">
+          <button
+            type="button"
+            id="close-report-user"
+            class="px-4 py-2 border rounded"
+          >
+            취소
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-yellow-600 text-white rounded"
+          >
+            신고
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 판매 상태 -->
+  {% if post.is_sold %}
+  <div class="text-center mb-8">
+    <span class="inline-block px-3 py-1 bg-gray-200 text-gray-700 rounded-full">
+      판매 완료
+    </span>
+  </div>
+  {% endif %}
+
+  <!-- 댓글 목록 -->
+  <section class="mb-8">
+    <h2 class="text-2xl font-semibold mb-4">댓글 ({{ comments|length }})</h2>
+    <ul class="space-y-4">
+      {% for comment in comments %}
+      <li class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <p class="text-gray-800">{{ comment.body }}</p>
+        <div class="mt-2 text-xs text-gray-400 flex justify-between">
+          <span>작성자 {{ comment.author }}</span>
+          <span>{{ comment.created_at }}</span>
+        </div>
+      </li>
+      {% else %}
+      <li class="text-gray-500">등록된 댓글이 없습니다.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 댓글 작성 및 구매 버튼 -->
+  {% if current_user.is_authenticated %}
+  <section class="bg-white p-6 rounded-lg shadow mb-8">
+    <form method="post" action="{{ url_for('view_post', post_id=post.id) }}">
+      <div class="flex space-x-4">
+        <textarea
+          name="comment"
+          rows="3"
+          required
+          {%
+          if
+          post.is_sold
+          %}
+          disabled
+          {%
+          endif
+          %}
+          class="flex-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="댓글을 입력하세요"
+        ></textarea>
+        <div class="flex flex-col space-y-2">
+          <button
+            type="submit"
+            class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+            {%
+            if
+            post.is_sold
+            %}
+            disabled
+            {%
+            endif
+            %}
+          >
+            작성
+          </button>
+          {% if not post.is_sold and current_user.id != post.user_id %}
+          <button
+            type="button"
+            id="open-modal"
+            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            구매하기
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </section>
+  {% else %}
+  <p class="text-gray-500 text-center mb-8">
+    댓글과 구매를 위해
+    <a href="{{ url_for('login') }}" class="text-indigo-600 hover:underline"
+      >로그인</a
+    >
+    해주세요.
+  </p>
+  {% endif %}
+
+  <!-- 구매 모달 -->
+  <div
+    id="purchase-modal"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+  >
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+      <h2 class="text-xl font-semibold mb-4">구매 확인</h2>
+      <p>
+        현재 잔액: <strong>₩{{ "{:.2f}".format(current_user.balance) }}</strong>
+      </p>
+      <p>상품 가격: <strong>₩{{ "{:.2f}".format(post.price) }}</strong></p>
+      <form
+        method="post"
+        action="{{ url_for('purchase', post_id=post.id) }}"
+        class="mt-4 space-y-4"
+      >
+        <div>
+          <label for="amount" class="block text-gray-700 mb-1"
+            >송금할 금액</label
+          >
+          <input
+            type="number"
+            id="amount"
+            name="amount"
+            value="{{ post.price }}"
+            min="0"
+            step="0.01"
+            required
+            class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div class="flex justify-end space-x-4">
+          <button
+            type="button"
+            id="close-modal"
+            class="px-4 py-2 border rounded hover:bg-gray-100"
+          >
+            취소
+          </button>
+          <button
+            type="submit"
+            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            확인
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  {% if current_user.is_authenticated and current_user.id != post.user_id %}
+  // 게시글 신고 모달 토글
+  document.getElementById('open-report-post').onclick = () =>
+    document.getElementById('modal-report-post').classList.remove('hidden');
+  document.getElementById('close-report-post').onclick = () =>
+    document.getElementById('modal-report-post').classList.add('hidden');
+
+  // 사용자 신고 모달 토글
+  document.getElementById('open-report-user').onclick = () =>
+    document.getElementById('modal-report-user').classList.remove('hidden');
+  document.getElementById('close-report-user').onclick = () =>
+    document.getElementById('modal-report-user').classList.add('hidden');
+  {% endif %}
+
+  // 구매 모달 토글
+  const openModalBtn = document.getElementById("open-modal");
+  const closeModalBtn = document.getElementById("close-modal");
+  const purchaseModal = document.getElementById("purchase-modal");
+  if (openModalBtn)
+    openModalBtn.addEventListener("click", () =>
+      purchaseModal.classList.remove("hidden")
+    );
+  if (closeModalBtn)
+    closeModalBtn.addEventListener("click", () =>
+      purchaseModal.classList.add("hidden")
+    );
+</script>
+{% endblock %}

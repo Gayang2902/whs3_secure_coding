@@ -1,0 +1,9 @@
+Flask
+Flask-Login
+Werkzeug
+markdown
+Flask-SocketIO
+eventlet         
+flask-wtf
+bleach
+flask-limiter

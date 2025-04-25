@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}사용자 검색{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-8">
+  <h2 class="text-2xl font-bold mb-4">사용자 검색</h2>
+
+  {% if q %}
+    {% if users %}
+      <table class="min-w-full bg-white shadow rounded-lg overflow-hidden">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">ID</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">Username</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">차단 여부</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">잔액</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for u in users %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4">{{ u.id }}</td>
+            <td class="px-6 py-4">{{ u.username }}</td>
+            <td class="px-6 py-4">
+              {% if u.is_blocked %}
+                <span class="text-red-600">차단됨</span>
+              {% else %}
+                <span class="text-green-600">활성</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">₩{{ "{:,.2f}".format(u.balance) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="text-gray-500">“{{ q }}”에 해당하는 사용자가 없습니다.</p>
+    {% endif %}
+  {% else %}
+    <p class="text-gray-500">검색어를 입력하고 엔터를 눌러 주세요.</p>
+  {% endif %}
+</div>
+{% endblock %}
